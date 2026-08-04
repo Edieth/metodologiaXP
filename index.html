@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Publicación</title>
+    <!-- Bootstrap CSS en el <head> -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- Tu CSS personalizado -->
+    <link rel="stylesheet" href="custom.css">
+</head>
+
+<body>
+
+    <main class="container my-4">
+        <section class="mb-5">
+            <form id="post-form" class="card p-4 shadow-sm">
+                <div class="mb-3">
+                    <label for="student-name" class="form-label">Nombre</label>
+                    <input type="text" id="student-name" name="student-name" class="form-control" required
+                        placeholder="Escribe tu nombre">
+                </div>
+
+                <div class="mb-3">
+                    <label for="message-text" class="form-label">Mensaje</label>
+                    <textarea id="message-text" name="message-text" class="form-control" rows="3" required
+                        placeholder="¿Qué quieres compartir?"></textarea>
+                </div>
+
+                <button type="submit" id="publish-btn" class="btn btn-primary">Publicar</button>
+            </form>
+        </section>
+
+        <section id="feed-container">
+            <!-- Feed de tarjetas/mensajes -->
+        </section>
+    </main>
+
+    <!-- JS de Bootstrap al final del <body> -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+
+    <script src="main.js"></script>
+</body>
+
+</html>
