@@ -32,7 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
             id: Date.now(),
             name: name,
             message: message,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            likes: 0
         };
 
         posts.unshift(newPost);
@@ -84,6 +85,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button class="delete-btn" data-id="${post.id}" title="Eliminar" aria-label="Eliminar publicación">&times;</button>
                         </div>
                         <p class="card-text">${escapeHTML(post.message)}</p>
+                        <div class="post-actions">
+                            <button class="btn-pill like-btn" data-id="${post.id}" title="Me gusta">Me gusta</button>
+                            <span class="likes-count">${post.likes || 0} Me gusta${post.likes === 1 ? '' : 's'}</span>
+                        </div>
                     </div>
                 </div>
             `;
@@ -95,6 +100,17 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', (e) => {
                 const id = Number(e.currentTarget.dataset.id);
                 posts = posts.filter(p => p.id !== id);
+                localStorage.setItem('posts', JSON.stringify(posts));
+                renderPosts();
+            });
+        });
+
+        feedContainer.querySelectorAll('.like-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = Number(e.currentTarget.dataset.id);
+                const post = posts.find(p => p.id === id);
+                if (!post) return;
+                post.likes = (post.likes || 0) + 1;
                 localStorage.setItem('posts', JSON.stringify(posts));
                 renderPosts();
             });
