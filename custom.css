@@ -185,6 +185,36 @@ main section {
   word-wrap: break-word;
 }
 
+.post-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.likes-count {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.like-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid rgba(29, 155, 240, 0.2);
+  background-color: rgba(29, 155, 240, 0.08);
+  color: var(--twitter-blue);
+  font-weight: 700;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.like-btn:hover {
+  background-color: rgba(29, 155, 240, 0.16);
+  transform: translateY(-1px);
+}
 
 .post-row {
   display: flex;
