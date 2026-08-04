@@ -119,17 +119,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function getRelativeTime(timestamp) {
-        const diffSeconds = Math.floor((Date.now() - timestamp) / 1000);
+    const diffSeconds = Math.floor((Date.now() - timestamp) / 1000);
 
-        if (diffSeconds < 30) return 'ahora mismo';
-        if (diffSeconds < 60) return `hace ${diffSeconds} s`;
+    let relative;
+
+    if (diffSeconds < 30) {
+        relative = "ahora mismo";
+    } else if (diffSeconds < 60) {
+        relative = `hace ${diffSeconds} s`;
+    } else {
         const diffMinutes = Math.floor(diffSeconds / 60);
-        if (diffMinutes < 60) return `hace ${diffMinutes} min`;
-        const diffHours = Math.floor(diffMinutes / 60);
-        if (diffHours < 24) return `hace ${diffHours} h`;
-        const diffDays = Math.floor(diffHours / 24);
-        return `hace ${diffDays} d`;
+
+        if (diffMinutes < 60) {
+            relative = `hace ${diffMinutes} min`;
+        } else {
+            const diffHours = Math.floor(diffMinutes / 60);
+
+            if (diffHours < 24) {
+                relative = `hace ${diffHours} h`;
+            } else {
+                const diffDays = Math.floor(diffHours / 24);
+                relative = `hace ${diffDays} d`;
+            }
+        }
     }
+
+    const fechaHora = new Date(timestamp).toLocaleString("es-ES", {
+        dateStyle: "short",
+        timeStyle: "short"
+    });
+
+    return `${relative} (${fechaHora})`;
+}
 
 
     function escapeHTML(str) {
