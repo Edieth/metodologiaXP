@@ -82,6 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="post-header">
                             <h5 class="card-title">${escapeHTML(post.name)}</h5>
                             <span class="post-time">· ${timeLabel}</span>
+                            <button class="edit-btn" data-id="${post.id}" type="button" title="Editar publicación" aria-label="Editar publicación">Editar</button>
                             <button class="delete-btn" data-id="${post.id}" type="button" title="Eliminar publicación" aria-label="Eliminar publicación">Eliminar</button>
                         </div>
                         <p class="card-text">${escapeHTML(post.message)}</p>
@@ -117,6 +118,53 @@ document.addEventListener('DOMContentLoaded', () => {
                 post.likes = (post.likes || 0) + 1;
                 localStorage.setItem('posts', JSON.stringify(posts));
                 renderPosts();
+            });
+        });
+
+        feedContainer.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = Number(e.currentTarget.dataset.id);
+                const postElement = e.currentTarget.closest('.card-body');
+                const textContainer = postElement.querySelector('.card-text');
+                
+                // Prevenir múltiples clics si ya está editando
+                if (textContainer.querySelector('.edit-textarea')) return;
+        
+                const post = posts.find(p => p.id === id);
+                if (!post) return;
+                
+                const originalText = post.message;
+        
+                textContainer.innerHTML = `
+                    <textarea class="form-control edit-textarea mt-2 mb-2" maxlength="280">${originalText}</textarea>
+                    <div class="edit-actions">
+                        <button class="btn btn-sm btn-primary save-edit-btn">Guardar</button>
+                        <button class="btn btn-sm btn-secondary cancel-edit-btn">Cancelar</button>
+                        <span class="text-danger ms-2 d-none error-msg" style="font-size: 0.85rem;">El mensaje no puede estar vacío.</span>
+                    </div>
+                `;
+        
+                const textarea = textContainer.querySelector('.edit-textarea');
+                textarea.focus();
+        
+                textContainer.querySelector('.cancel-edit-btn').addEventListener('click', () => {
+                    renderPosts(); // Restaurar a vista normal
+                });
+        
+                textContainer.querySelector('.save-edit-btn').addEventListener('click', () => {
+                    const newText = textarea.value.trim();
+                    const errorMsg = textContainer.querySelector('.error-msg');
+        
+                    if (!newText) {
+                        textarea.classList.add('is-invalid');
+                        errorMsg.classList.remove('d-none');
+                        return;
+                    }
+        
+                    post.message = newText;
+                    localStorage.setItem('posts', JSON.stringify(posts));
+                    renderPosts(); 
+                });
             });
         });
     }

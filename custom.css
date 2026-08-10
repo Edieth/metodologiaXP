@@ -246,8 +246,30 @@ main section {
   font-size: 13px;
 }
 
-.delete-btn {
+.edit-btn {
   margin-left: auto;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 9999px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.edit-btn:hover {
+  background-color: rgba(29, 155, 240, 0.1);
+  color: var(--twitter-blue);
+}
+
+.post-header .delete-btn {
+  margin-left: 0;
+}
+
+.delete-btn {
   border: none;
   background: transparent;
   color: var(--text-muted);
@@ -263,6 +285,12 @@ main section {
 .delete-btn:hover {
   background-color: rgba(244, 33, 46, 0.1);
   color: #f4212e;
+}
+
+.edit-textarea {
+  font-size: 15px !important;
+  color: var(--text-primary) !important;
+  resize: vertical;
 }
 
 
