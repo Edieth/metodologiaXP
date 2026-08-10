@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="post-header">
                             <h5 class="card-title">${escapeHTML(post.name)}</h5>
                             <span class="post-time">· ${timeLabel}</span>
-                            <button class="delete-btn" data-id="${post.id}" title="Eliminar" aria-label="Eliminar publicación">&times;</button>
+                            <button class="delete-btn" data-id="${post.id}" type="button" title="Eliminar publicación" aria-label="Eliminar publicación">Eliminar</button>
                         </div>
                         <p class="card-text">${escapeHTML(post.message)}</p>
                         <div class="post-actions">
@@ -99,6 +99,10 @@ document.addEventListener('DOMContentLoaded', () => {
         feedContainer.querySelectorAll('.delete-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const id = Number(e.currentTarget.dataset.id);
+
+                const confirmed = window.confirm('¿Seguro que deseas eliminar esta publicación?');
+                if (!confirmed) return;
+
                 posts = posts.filter(p => p.id !== id);
                 localStorage.setItem('posts', JSON.stringify(posts));
                 renderPosts();
