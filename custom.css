@@ -144,6 +144,21 @@ main section {
 }
 
 
+#search-form {
+  margin: 0;
+}
+
+#search-input {
+  border-radius: 9999px;
+  border: 1px solid var(--border-light);
+  padding: 10px 14px;
+}
+
+#search-help {
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
 #feed-container {
   padding: 0 !important;
   margin: 0 !important;

@@ -1,10 +1,38 @@
-document.addEventListener('DOMContentLoaded', () => {
+function getFilteredPosts(sourcePosts, searchQuery) {
+    const normalizedQuery = (searchQuery || '').trim().toLowerCase();
+
+    if (!normalizedQuery) {
+        return sourcePosts;
+    }
+
+    return sourcePosts.filter(post => {
+        const searchableText = [
+            post.name,
+            post.message,
+            ...(Array.isArray(post.comentarios) ? post.comentarios.map(comment => `${comment.autor || ''} ${comment.texto || ''}`) : [])
+        ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+
+        return searchableText.includes(normalizedQuery);
+    });
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { getFilteredPosts };
+}
+
+if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', () => {
 
     const postForm = document.getElementById('post-form');
     const studentNameInput = document.getElementById('student-name');
     const messageTextInput = document.getElementById('message-text');
     const feedContainer = document.getElementById('feed-container');
     const charCounter = document.getElementById('char-counter');
+    const searchForm = document.getElementById('search-form');
+    const searchInput = document.getElementById('search-input');
     const MAX_CHARS = 280;
 
     let posts = (JSON.parse(localStorage.getItem('posts')) || []).map(post => {
@@ -13,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return post;
     });
-
+    let searchQuery = '';
 
     renderPosts();
 
@@ -23,6 +51,17 @@ document.addEventListener('DOMContentLoaded', () => {
         charCounter.classList.toggle('char-counter-warning', remaining <= 20);
     });
 
+
+    searchInput.addEventListener('input', () => {
+        searchQuery = searchInput.value;
+        renderPosts();
+    });
+
+    searchForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        searchQuery = searchInput.value.trim();
+        renderPosts();
+    });
 
     postForm.addEventListener('submit', (event) => {
         event.preventDefault();
@@ -59,6 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderPosts(newestId) {
         feedContainer.innerHTML = '';
+        const visiblePosts = getFilteredPosts(posts, searchQuery);
 
         if (posts.length === 0) {
             feedContainer.innerHTML = `
@@ -70,7 +110,17 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        posts.forEach(post => {
+        if (visiblePosts.length === 0) {
+            feedContainer.innerHTML = `
+                <div id="empty-state">
+                    <p>No se encontraron publicaciones.</p>
+                    <span>Prueba con otro nombre, palabra o comentario.</span>
+                </div>
+            `;
+            return;
+        }
+
+        visiblePosts.forEach(post => {
             const postElement = document.createElement('article');
             postElement.className = 'card';
             if (post.id === newestId) {
@@ -298,4 +348,5 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
     }
-});
+    });
+}
