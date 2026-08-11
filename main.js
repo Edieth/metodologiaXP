@@ -52,6 +52,9 @@ if (typeof document !== 'undefined') {
     const searchForm = document.getElementById('search-form');
     const searchInput = document.getElementById('search-input');
     const sortSelect = document.getElementById('sort-select');
+    const summaryPostsCount = document.getElementById('summary-posts-count');
+    const summaryLikesCount = document.getElementById('summary-likes-count');
+    const summaryCommentsCount = document.getElementById('summary-comments-count');
     const MAX_CHARS = 280;
 
     let posts = (JSON.parse(localStorage.getItem('posts')) || []).map(post => {
@@ -64,6 +67,7 @@ if (typeof document !== 'undefined') {
     let sortCriterion = 'recent';
 
     renderPosts();
+    renderActivitySummary();
 
     messageTextInput.addEventListener('input', () => {
         const remaining = MAX_CHARS - messageTextInput.value.length;
@@ -112,6 +116,7 @@ if (typeof document !== 'undefined') {
         localStorage.setItem('posts', JSON.stringify(posts));
 
 
+        renderActivitySummary();
         renderPosts(newPost.id);
 
 
@@ -238,6 +243,7 @@ if (typeof document !== 'undefined') {
                 });
 
                 localStorage.setItem('posts', JSON.stringify(posts));
+                renderActivitySummary();
                 renderPosts();
             });
         });
@@ -251,6 +257,7 @@ if (typeof document !== 'undefined') {
 
                 posts = posts.filter(p => p.id !== id);
                 localStorage.setItem('posts', JSON.stringify(posts));
+                renderActivitySummary();
                 renderPosts();
             });
         });
@@ -262,6 +269,7 @@ if (typeof document !== 'undefined') {
                 if (!post) return;
                 post.likes = (post.likes || 0) + 1;
                 localStorage.setItem('posts', JSON.stringify(posts));
+                renderActivitySummary();
                 renderPosts();
             });
         });
@@ -308,10 +316,24 @@ if (typeof document !== 'undefined') {
 
                     post.message = newText;
                     localStorage.setItem('posts', JSON.stringify(posts));
+                    renderActivitySummary();
                     renderPosts();
                 });
             });
         });
+    }
+
+    function renderActivitySummary() {
+        const totalPosts = posts.length;
+        const totalLikes = posts.reduce((sum, post) => sum + (Number(post.likes) || 0), 0);
+        const totalComments = posts.reduce(
+            (sum, post) => sum + (Array.isArray(post.comentarios) ? post.comentarios.length : 0),
+            0
+        );
+
+        summaryPostsCount.textContent = totalPosts;
+        summaryLikesCount.textContent = totalLikes;
+        summaryCommentsCount.textContent = totalComments;
     }
 
     function getInitials(name) {
