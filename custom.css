@@ -327,3 +327,88 @@ main section {
 .post-new {
   animation: fadeSlideIn 0.3s ease-out;
 }
+
+.comments-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-light);
+  cursor: auto;
+}
+
+.comments-header {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.comment-item {
+  background-color: rgba(0, 0, 0, 0.03);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+}
+
+.comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.comment-author {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+
+.comment-time {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.comment-text {
+  color: var(--text-primary);
+  word-wrap: break-word;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.no-comments-text {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.comment-form .form-control-sm {
+  font-size: 0.85rem !important;
+  border: 1px solid rgba(0, 0, 0, 0.15) !important;
+  border-radius: 6px !important;
+  background-color: #ffffff !important;
+}
+
+.comment-form .form-control-sm:focus {
+  border-color: var(--twitter-blue) !important;
+  box-shadow: 0 0 0 2px rgba(29, 155, 240, 0.2) !important;
+}
+
+.comment-submit-btn {
+  border-radius: 9999px !important;
+  padding: 4px 14px !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  background-color: var(--twitter-blue) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.comment-submit-btn:hover {
+  background-color: var(--twitter-blue-hover) !important;
+}

@@ -7,7 +7,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const charCounter = document.getElementById('char-counter');
     const MAX_CHARS = 280;
 
-    let posts = JSON.parse(localStorage.getItem('posts')) || [];
+    let posts = (JSON.parse(localStorage.getItem('posts')) || []).map(post => {
+        if (!Array.isArray(post.comentarios)) {
+            post.comentarios = [];
+        }
+        return post;
+    });
 
 
     renderPosts();
@@ -33,7 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
             name: name,
             message: message,
             timestamp: Date.now(),
-            likes: 0
+            likes: 0,
+            comentarios: []
         };
 
         posts.unshift(newPost);
@@ -58,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
             feedContainer.innerHTML = `
                 <div id="empty-state">
                     <p>Todavía no hay publicaciones.</p>
-                    <span>Sé el primero en compartir algo 👋</span>
+                    <span>Sé el primero en compartir algo </span>
                 </div>
             `;
             return;
@@ -75,6 +81,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const avatarColor = getColorFromString(post.name);
             const timeLabel = getRelativeTime(post.timestamp || post.id);
 
+            const comentarios = Array.isArray(post.comentarios) ? post.comentarios : [];
+            const comentariosHTML = comentarios.length > 0
+                ? comentarios.map(c => `
+                    <div class="comment-item">
+                        <div class="comment-meta">
+                            <span class="comment-author">${escapeHTML(c.autor)}</span>
+                            <span class="comment-time">· ${getRelativeTime(c.timestamp || c.id)}</span>
+                        </div>
+                        <p class="comment-text">${escapeHTML(c.texto)}</p>
+                    </div>
+                `).join('')
+                : '<div class="no-comments-text">No hay comentarios aún.</div>';
+
             postElement.innerHTML = `
                 <div class="post-row">
                     <div class="avatar" style="background-color: ${avatarColor};">${initials}</div>
@@ -90,11 +109,61 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button class="btn-pill like-btn" data-id="${post.id}" title="Me gusta">Me gusta</button>
                             <span class="likes-count">${post.likes || 0} Me gusta${post.likes === 1 ? '' : 's'}</span>
                         </div>
+                        <div class="comments-section">
+                            <div class="comments-header">Comentarios (${comentarios.length})</div>
+                            <div class="comments-list">
+                                ${comentariosHTML}
+                            </div>
+                            <form class="comment-form mt-2" data-post-id="${post.id}">
+                                <div class="row g-2 mb-2">
+                                    <div class="col-12 col-sm-4">
+                                        <input type="text" class="form-control form-control-sm comment-author-input" placeholder="Tu nombre" required maxlength="40">
+                                    </div>
+                                    <div class="col-12 col-sm-8">
+                                        <input type="text" class="form-control form-control-sm comment-text-input" placeholder="Escribe un comentario..." required maxlength="280">
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end">
+                                    <button type="submit" class="btn btn-sm btn-primary comment-submit-btn">Comentar</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             `;
 
             feedContainer.appendChild(postElement);
+        });
+
+        feedContainer.querySelectorAll('.comment-form').forEach(form => {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const postId = Number(form.dataset.postId);
+                const authorInput = form.querySelector('.comment-author-input');
+                const textInput = form.querySelector('.comment-text-input');
+
+                const autor = authorInput.value.trim();
+                const texto = textInput.value.trim();
+
+                if (!autor || !texto) return;
+
+                const post = posts.find(p => p.id === postId);
+                if (!post) return;
+
+                if (!Array.isArray(post.comentarios)) {
+                    post.comentarios = [];
+                }
+
+                post.comentarios.push({
+                    id: Date.now(),
+                    autor: autor,
+                    texto: texto,
+                    timestamp: Date.now()
+                });
+
+                localStorage.setItem('posts', JSON.stringify(posts));
+                renderPosts();
+            });
         });
 
         feedContainer.querySelectorAll('.delete-btn').forEach(btn => {
@@ -126,15 +195,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const id = Number(e.currentTarget.dataset.id);
                 const postElement = e.currentTarget.closest('.card-body');
                 const textContainer = postElement.querySelector('.card-text');
-                
+
                 // Prevenir múltiples clics si ya está editando
                 if (textContainer.querySelector('.edit-textarea')) return;
-        
+
                 const post = posts.find(p => p.id === id);
                 if (!post) return;
-                
+
                 const originalText = post.message;
-        
+
                 textContainer.innerHTML = `
                     <textarea class="form-control edit-textarea mt-2 mb-2" maxlength="280">${originalText}</textarea>
                     <div class="edit-actions">
@@ -143,27 +212,27 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="text-danger ms-2 d-none error-msg" style="font-size: 0.85rem;">El mensaje no puede estar vacío.</span>
                     </div>
                 `;
-        
+
                 const textarea = textContainer.querySelector('.edit-textarea');
                 textarea.focus();
-        
+
                 textContainer.querySelector('.cancel-edit-btn').addEventListener('click', () => {
                     renderPosts(); // Restaurar a vista normal
                 });
-        
+
                 textContainer.querySelector('.save-edit-btn').addEventListener('click', () => {
                     const newText = textarea.value.trim();
                     const errorMsg = textContainer.querySelector('.error-msg');
-        
+
                     if (!newText) {
                         textarea.classList.add('is-invalid');
                         errorMsg.classList.remove('d-none');
                         return;
                     }
-        
+
                     post.message = newText;
                     localStorage.setItem('posts', JSON.stringify(posts));
-                    renderPosts(); 
+                    renderPosts();
                 });
             });
         });
@@ -187,38 +256,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function getRelativeTime(timestamp) {
-    const diffSeconds = Math.floor((Date.now() - timestamp) / 1000);
+        const diffSeconds = Math.floor((Date.now() - timestamp) / 1000);
 
-    let relative;
+        let relative;
 
-    if (diffSeconds < 30) {
-        relative = "ahora mismo";
-    } else if (diffSeconds < 60) {
-        relative = `hace ${diffSeconds} s`;
-    } else {
-        const diffMinutes = Math.floor(diffSeconds / 60);
-
-        if (diffMinutes < 60) {
-            relative = `hace ${diffMinutes} min`;
+        if (diffSeconds < 30) {
+            relative = "ahora mismo";
+        } else if (diffSeconds < 60) {
+            relative = `hace ${diffSeconds} s`;
         } else {
-            const diffHours = Math.floor(diffMinutes / 60);
+            const diffMinutes = Math.floor(diffSeconds / 60);
 
-            if (diffHours < 24) {
-                relative = `hace ${diffHours} h`;
+            if (diffMinutes < 60) {
+                relative = `hace ${diffMinutes} min`;
             } else {
-                const diffDays = Math.floor(diffHours / 24);
-                relative = `hace ${diffDays} d`;
+                const diffHours = Math.floor(diffMinutes / 60);
+
+                if (diffHours < 24) {
+                    relative = `hace ${diffHours} h`;
+                } else {
+                    const diffDays = Math.floor(diffHours / 24);
+                    relative = `hace ${diffDays} d`;
+                }
             }
         }
+
+        const fechaHora = new Date(timestamp).toLocaleString("es-ES", {
+            dateStyle: "short",
+            timeStyle: "short"
+        });
+
+        return `${relative} (${fechaHora})`;
     }
-
-    const fechaHora = new Date(timestamp).toLocaleString("es-ES", {
-        dateStyle: "short",
-        timeStyle: "short"
-    });
-
-    return `${relative} (${fechaHora})`;
-}
 
 
     function escapeHTML(str) {
