@@ -171,6 +171,8 @@ if (typeof document !== 'undefined') {
                         <div class="comment-meta">
                             <span class="comment-author">${escapeHTML(c.autor)}</span>
                             <span class="comment-time">· ${getRelativeTime(c.timestamp || c.id)}</span>
+                            <button class="comment-edit-btn" data-post-id="${post.id}" data-comment-id="${c.id}" type="button" title="Editar comentario">Editar</button>
+                            <button class="comment-delete-btn" data-post-id="${post.id}" data-comment-id="${c.id}" type="button" title="Eliminar comentario">Eliminar</button>
                         </div>
                         <p class="comment-text">${escapeHTML(c.texto)}</p>
                     </div>
@@ -326,6 +328,77 @@ if (typeof document !== 'undefined') {
                     post.message = newText;
                     localStorage.setItem('posts', JSON.stringify(posts));
                     renderActivitySummary();
+                    renderPosts();
+                });
+            });
+        });
+
+        feedContainer.querySelectorAll('.comment-delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const postId = Number(e.currentTarget.dataset.postId);
+                const commentId = Number(e.currentTarget.dataset.commentId);
+
+                const confirmed = window.confirm('¿Seguro que deseas eliminar este comentario?');
+                if (!confirmed) return;
+
+                const post = posts.find(p => p.id === postId);
+                if (post && post.comentarios) {
+                    post.comentarios = post.comentarios.filter(c => c.id !== commentId);
+                    localStorage.setItem('posts', JSON.stringify(posts));
+                    renderActivitySummary();
+                    renderPosts();
+                }
+            });
+        });
+
+        feedContainer.querySelectorAll('.comment-edit-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const postId = Number(e.currentTarget.dataset.postId);
+                const commentId = Number(e.currentTarget.dataset.commentId);
+                
+                const commentElement = e.currentTarget.closest('.comment-item');
+                const textContainer = commentElement.querySelector('.comment-text');
+
+                // Prevenir múltiples clics si ya está editando
+                if (textContainer.querySelector('.edit-textarea')) return;
+
+                const post = posts.find(p => p.id === postId);
+                if (!post) return;
+                
+                const comment = post.comentarios.find(c => c.id === commentId);
+                if (!comment) return;
+
+                const originalText = comment.texto;
+
+                textContainer.innerHTML = `
+                    <textarea class="form-control edit-textarea form-control-sm mt-1 mb-1" maxlength="280">${originalText}</textarea>
+                    <div class="edit-actions comment-edit-actions">
+                        <button class="btn btn-sm btn-primary save-comment-edit-btn">Guardar</button>
+                        <button class="btn btn-sm btn-secondary cancel-comment-edit-btn">Cancelar</button>
+                        <span class="text-danger ms-2 d-none error-msg" style="font-size: 0.75rem;">El comentario no puede estar vacío.</span>
+                    </div>
+                `;
+
+                const textarea = textContainer.querySelector('.edit-textarea');
+                textarea.focus();
+
+                textContainer.querySelector('.cancel-comment-edit-btn').addEventListener('click', () => {
+                    renderPosts(); // Restaurar vista original
+                });
+
+                textContainer.querySelector('.save-comment-edit-btn').addEventListener('click', () => {
+                    const newText = textarea.value.trim();
+                    const errorMsg = textContainer.querySelector('.error-msg');
+
+                    if (!newText) {
+                        textarea.classList.add('is-invalid');
+                        errorMsg.classList.remove('d-none');
+                        return;
+                    }
+
+                    // Mantiene el autor, ID y timestamp original intactos (Persistencia de metadatos)
+                    comment.texto = newText;
+                    localStorage.setItem('posts', JSON.stringify(posts));
                     renderPosts();
                 });
             });
