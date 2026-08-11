@@ -55,7 +55,7 @@ if (typeof document !== 'undefined') {
     const summaryPostsCount = document.getElementById('summary-posts-count');
     const summaryLikesCount = document.getElementById('summary-likes-count');
     const summaryCommentsCount = document.getElementById('summary-comments-count');
-    const MAX_CHARS = 280;
+    const MAX_CHARS = 200;
 
     let posts = (JSON.parse(localStorage.getItem('posts')) || []).map(post => {
         if (!Array.isArray(post.comentarios)) {
@@ -100,6 +100,8 @@ if (typeof document !== 'undefined') {
 
         if (!name || !message) return;
 
+
+        if (message.length > MAX_CHARS) return;
 
         const newPost = {
             id: Date.now(),
@@ -289,7 +291,7 @@ if (typeof document !== 'undefined') {
                 const originalText = post.message;
 
                 textContainer.innerHTML = `
-                    <textarea class="form-control edit-textarea mt-2 mb-2" maxlength="280">${originalText}</textarea>
+                    <textarea class="form-control edit-textarea mt-2 mb-2" maxlength="200">${originalText}</textarea>
                     <div class="edit-actions">
                         <button class="btn btn-sm btn-primary save-edit-btn">Guardar</button>
                         <button class="btn btn-sm btn-secondary cancel-edit-btn">Cancelar</button>
@@ -310,6 +312,13 @@ if (typeof document !== 'undefined') {
 
                     if (!newText) {
                         textarea.classList.add('is-invalid');
+                        errorMsg.classList.remove('d-none');
+                        return;
+                    }
+
+                    if (newText.length > MAX_CHARS) {
+                        textarea.classList.add('is-invalid');
+                        errorMsg.textContent = `El mensaje no puede superar ${MAX_CHARS} caracteres.`;
                         errorMsg.classList.remove('d-none');
                         return;
                     }

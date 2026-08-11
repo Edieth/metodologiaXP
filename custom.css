@@ -264,6 +264,7 @@ main section {
 
 #feed-container .card-body {
   padding: 0 !important;
+  min-width: 0;
 }
 
 #feed-container .card-title {
@@ -279,6 +280,8 @@ main section {
   line-height: 1.5 !important;
   margin: 0 !important;
   word-wrap: break-word;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .post-actions {
@@ -475,6 +478,8 @@ main section {
   word-wrap: break-word;
   margin: 0;
   font-size: 0.9rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .no-comments-text {
