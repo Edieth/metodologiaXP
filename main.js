@@ -1,3 +1,27 @@
+function normalizePostReactions(post) {
+    if (!Array.isArray(post.comentarios)) {
+        post.comentarios = [];
+    }
+
+    const legacyLikes = Number(post.likes) || 0;
+    if (!post.reacciones || typeof post.reacciones !== 'object') {
+        post.reacciones = {
+            likes: legacyLikes,
+            love: 0,
+            haha: 0
+        };
+    } else {
+        post.reacciones = {
+            likes: Number(post.reacciones.likes) || Number(post.reacciones.meGusta) || legacyLikes,
+            love: Number(post.reacciones.love) || Number(post.reacciones.meEncanta) || 0,
+            haha: Number(post.reacciones.haha) || Number(post.reacciones.meDivierte) || 0
+        };
+    }
+
+    post.likes = post.reacciones.likes;
+    return post;
+}
+
 function getFilteredPosts(sourcePosts, searchQuery) {
     const normalizedQuery = (searchQuery || '').trim().toLowerCase();
 
@@ -29,7 +53,9 @@ function getSortedPosts(sourcePosts, sortCriterion) {
 
     if (sortCriterion === 'most-liked') {
         return sortedPosts.sort((a, b) => {
-            const likesDifference = (Number(b.likes) || 0) - (Number(a.likes) || 0);
+            const reactionsA = (Number(a.reacciones?.likes) || Number(a.likes) || 0) + (Number(a.reacciones?.love) || 0) + (Number(a.reacciones?.haha) || 0);
+            const reactionsB = (Number(b.reacciones?.likes) || Number(b.likes) || 0) + (Number(b.reacciones?.love) || 0) + (Number(b.reacciones?.haha) || 0);
+            const likesDifference = reactionsB - reactionsA;
             return likesDifference || getTimestamp(b) - getTimestamp(a);
         });
     }
@@ -38,7 +64,7 @@ function getSortedPosts(sourcePosts, sortCriterion) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { getFilteredPosts, getSortedPosts };
+    module.exports = { getFilteredPosts, getSortedPosts, normalizePostReactions };
 }
 
 if (typeof document !== 'undefined') {
@@ -57,12 +83,7 @@ if (typeof document !== 'undefined') {
     const summaryCommentsCount = document.getElementById('summary-comments-count');
     const MAX_CHARS = 200;
 
-    let posts = (JSON.parse(localStorage.getItem('posts')) || []).map(post => {
-        if (!Array.isArray(post.comentarios)) {
-            post.comentarios = [];
-        }
-        return post;
-    });
+    let posts = (JSON.parse(localStorage.getItem('posts')) || []).map(normalizePostReactions);
     let searchQuery = '';
     let sortCriterion = 'recent';
 
@@ -109,6 +130,11 @@ if (typeof document !== 'undefined') {
             message: message,
             timestamp: Date.now(),
             likes: 0,
+            reacciones: {
+                likes: 0,
+                love: 0,
+                haha: 0
+            },
             comentarios: []
         };
 
@@ -154,6 +180,7 @@ if (typeof document !== 'undefined') {
         }
 
         visiblePosts.forEach(post => {
+            normalizePostReactions(post);
             const postElement = document.createElement('article');
             postElement.className = 'card';
             if (post.id === newestId) {
@@ -191,8 +218,15 @@ if (typeof document !== 'undefined') {
                         </div>
                         <p class="card-text">${escapeHTML(post.message)}</p>
                         <div class="post-actions">
-                            <button class="btn-pill like-btn" data-id="${post.id}" title="Me gusta">Me gusta</button>
-                            <span class="likes-count">${post.likes || 0} Me gusta${post.likes === 1 ? '' : 's'}</span>
+                            <button class="reaction-btn like-btn reaction-btn--like" data-id="${post.id}" data-reaction="likes" title="Me gusta" aria-label="Reaccionar con Me gusta">
+                                <span>👍</span> <span>Me gusta</span> <strong>(${post.reacciones.likes})</strong>
+                            </button>
+                            <button class="reaction-btn reaction-btn--love" data-id="${post.id}" data-reaction="love" title="Me encanta" aria-label="Reaccionar con Me encanta">
+                                <span>❤️</span> <span>Me encanta</span> <strong>(${post.reacciones.love})</strong>
+                            </button>
+                            <button class="reaction-btn reaction-btn--haha" data-id="${post.id}" data-reaction="haha" title="Me divierte" aria-label="Reaccionar con Me divierte">
+                                <span>😂</span> <span>Me divierte</span> <strong>(${post.reacciones.haha})</strong>
+                            </button>
                         </div>
                         <div class="comments-section">
                             <div class="comments-header">Comentarios (${comentarios.length})</div>
@@ -266,12 +300,17 @@ if (typeof document !== 'undefined') {
             });
         });
 
-        feedContainer.querySelectorAll('.like-btn').forEach(btn => {
+        feedContainer.querySelectorAll('.reaction-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const id = Number(e.currentTarget.dataset.id);
+                const reaction = e.currentTarget.dataset.reaction || 'likes';
                 const post = posts.find(p => p.id === id);
                 if (!post) return;
-                post.likes = (post.likes || 0) + 1;
+
+                normalizePostReactions(post);
+                post.reacciones[reaction] = (Number(post.reacciones[reaction]) || 0) + 1;
+                post.likes = post.reacciones.likes;
+
                 localStorage.setItem('posts', JSON.stringify(posts));
                 renderActivitySummary();
                 renderPosts();
@@ -407,14 +446,20 @@ if (typeof document !== 'undefined') {
 
     function renderActivitySummary() {
         const totalPosts = posts.length;
-        const totalLikes = posts.reduce((sum, post) => sum + (Number(post.likes) || 0), 0);
+        const totalReactions = posts.reduce((sum, post) => {
+            const r = post.reacciones || {};
+            const likes = Number(r.likes) || Number(post.likes) || 0;
+            const love = Number(r.love) || 0;
+            const haha = Number(r.haha) || 0;
+            return sum + likes + love + haha;
+        }, 0);
         const totalComments = posts.reduce(
             (sum, post) => sum + (Array.isArray(post.comentarios) ? post.comentarios.length : 0),
             0
         );
 
         summaryPostsCount.textContent = totalPosts;
-        summaryLikesCount.textContent = totalLikes;
+        summaryLikesCount.textContent = totalReactions;
         summaryCommentsCount.textContent = totalComments;
     }
 

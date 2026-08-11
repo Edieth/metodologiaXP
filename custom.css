@@ -289,6 +289,7 @@ main section {
   align-items: center;
   gap: 8px;
   margin-top: 12px;
+  flex-wrap: wrap;
 }
 
 .likes-count {
@@ -296,23 +297,47 @@ main section {
   font-size: 0.9rem;
 }
 
+.reaction-btn,
 .like-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 5px;
   border-radius: 9999px;
   border: 1px solid rgba(29, 155, 240, 0.2);
   background-color: rgba(29, 155, 240, 0.08);
   color: var(--twitter-blue);
   font-weight: 700;
   padding: 6px 12px;
+  font-size: 13px;
   cursor: pointer;
   transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
+.reaction-btn:hover,
 .like-btn:hover {
   background-color: rgba(29, 155, 240, 0.16);
   transform: translateY(-1px);
+}
+
+.reaction-btn--love {
+  border-color: rgba(249, 24, 128, 0.2);
+  background-color: rgba(249, 24, 128, 0.08);
+  color: #f91880;
+}
+
+.reaction-btn--love:hover {
+  background-color: rgba(249, 24, 128, 0.16);
+}
+
+.reaction-btn--haha {
+  border-color: rgba(255, 173, 31, 0.3);
+  background-color: rgba(255, 173, 31, 0.1);
+  color: #b45309;
+}
+
+.reaction-btn--haha:hover {
+  background-color: rgba(255, 173, 31, 0.2);
 }
 
 .post-row {
