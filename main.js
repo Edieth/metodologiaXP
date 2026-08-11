@@ -12,10 +12,14 @@ function normalizePostReactions(post) {
         };
     } else {
         post.reacciones = {
-            likes: Number(post.reacciones.likes) || Number(post.reacciones.meGusta) || legacyLikes,
-            love: Number(post.reacciones.love) || Number(post.reacciones.meEncanta) || 0,
-            haha: Number(post.reacciones.haha) || Number(post.reacciones.meDivierte) || 0
+            likes: Math.max(0, Number(post.reacciones.likes) || Number(post.reacciones.meGusta) || 0),
+            love: Math.max(0, Number(post.reacciones.love) || Number(post.reacciones.meEncanta) || 0),
+            haha: Math.max(0, Number(post.reacciones.haha) || Number(post.reacciones.meDivierte) || 0)
         };
+    }
+
+    if (typeof post.userReaction === 'undefined') {
+        post.userReaction = null;
     }
 
     post.likes = post.reacciones.likes;
@@ -218,13 +222,13 @@ if (typeof document !== 'undefined') {
                         </div>
                         <p class="card-text">${escapeHTML(post.message)}</p>
                         <div class="post-actions">
-                            <button class="reaction-btn like-btn reaction-btn--like" data-id="${post.id}" data-reaction="likes" title="Me gusta" aria-label="Reaccionar con Me gusta">
+                            <button class="reaction-btn like-btn reaction-btn--like ${post.userReaction === 'likes' ? 'active' : ''}" data-id="${post.id}" data-reaction="likes" title="Me gusta" aria-label="Reaccionar con Me gusta">
                                 <span>👍</span> <span>Me gusta</span> <strong>(${post.reacciones.likes})</strong>
                             </button>
-                            <button class="reaction-btn reaction-btn--love" data-id="${post.id}" data-reaction="love" title="Me encanta" aria-label="Reaccionar con Me encanta">
+                            <button class="reaction-btn reaction-btn--love ${post.userReaction === 'love' ? 'active' : ''}" data-id="${post.id}" data-reaction="love" title="Me encanta" aria-label="Reaccionar con Me encanta">
                                 <span>❤️</span> <span>Me encanta</span> <strong>(${post.reacciones.love})</strong>
                             </button>
-                            <button class="reaction-btn reaction-btn--haha" data-id="${post.id}" data-reaction="haha" title="Me divierte" aria-label="Reaccionar con Me divierte">
+                            <button class="reaction-btn reaction-btn--haha ${post.userReaction === 'haha' ? 'active' : ''}" data-id="${post.id}" data-reaction="haha" title="Me divierte" aria-label="Reaccionar con Me divierte">
                                 <span>😂</span> <span>Me divierte</span> <strong>(${post.reacciones.haha})</strong>
                             </button>
                         </div>
@@ -303,12 +307,24 @@ if (typeof document !== 'undefined') {
         feedContainer.querySelectorAll('.reaction-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const id = Number(e.currentTarget.dataset.id);
-                const reaction = e.currentTarget.dataset.reaction || 'likes';
+                const selectedReaction = e.currentTarget.dataset.reaction || 'likes';
                 const post = posts.find(p => p.id === id);
                 if (!post) return;
 
                 normalizePostReactions(post);
-                post.reacciones[reaction] = (Number(post.reacciones[reaction]) || 0) + 1;
+                const previousReaction = post.userReaction;
+
+                if (previousReaction === selectedReaction) {
+                    post.reacciones[selectedReaction] = Math.max(0, (Number(post.reacciones[selectedReaction]) || 0) - 1);
+                    post.userReaction = null;
+                } else {
+                    if (previousReaction && post.reacciones[previousReaction] !== undefined) {
+                        post.reacciones[previousReaction] = Math.max(0, (Number(post.reacciones[previousReaction]) || 0) - 1);
+                    }
+                    post.reacciones[selectedReaction] = (Number(post.reacciones[selectedReaction]) || 0) + 1;
+                    post.userReaction = selectedReaction;
+                }
+
                 post.likes = post.reacciones.likes;
 
                 localStorage.setItem('posts', JSON.stringify(posts));

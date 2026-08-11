@@ -340,6 +340,24 @@ main section {
   background-color: rgba(255, 173, 31, 0.2);
 }
 
+.reaction-btn.active {
+  font-weight: 800;
+  box-shadow: 0 0 0 2px currentColor;
+  transform: scale(1.03);
+}
+
+.reaction-btn--like.active {
+  background-color: rgba(29, 155, 240, 0.25) !important;
+}
+
+.reaction-btn--love.active {
+  background-color: rgba(249, 24, 128, 0.25) !important;
+}
+
+.reaction-btn--haha.active {
+  background-color: rgba(255, 173, 31, 0.3) !important;
+}
+
 .post-row {
   display: flex;
   gap: 12px;
