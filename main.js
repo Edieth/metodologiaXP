@@ -19,8 +19,26 @@ function getFilteredPosts(sourcePosts, searchQuery) {
     });
 }
 
+function getSortedPosts(sourcePosts, sortCriterion) {
+    const sortedPosts = [...sourcePosts];
+    const getTimestamp = post => Number(post.timestamp || post.id || 0);
+
+    if (sortCriterion === 'oldest') {
+        return sortedPosts.sort((a, b) => getTimestamp(a) - getTimestamp(b));
+    }
+
+    if (sortCriterion === 'most-liked') {
+        return sortedPosts.sort((a, b) => {
+            const likesDifference = (Number(b.likes) || 0) - (Number(a.likes) || 0);
+            return likesDifference || getTimestamp(b) - getTimestamp(a);
+        });
+    }
+
+    return sortedPosts.sort((a, b) => getTimestamp(b) - getTimestamp(a));
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { getFilteredPosts };
+    module.exports = { getFilteredPosts, getSortedPosts };
 }
 
 if (typeof document !== 'undefined') {
@@ -33,6 +51,7 @@ if (typeof document !== 'undefined') {
     const charCounter = document.getElementById('char-counter');
     const searchForm = document.getElementById('search-form');
     const searchInput = document.getElementById('search-input');
+    const sortSelect = document.getElementById('sort-select');
     const MAX_CHARS = 280;
 
     let posts = (JSON.parse(localStorage.getItem('posts')) || []).map(post => {
@@ -42,6 +61,7 @@ if (typeof document !== 'undefined') {
         return post;
     });
     let searchQuery = '';
+    let sortCriterion = 'recent';
 
     renderPosts();
 
@@ -60,6 +80,11 @@ if (typeof document !== 'undefined') {
     searchForm.addEventListener('submit', (event) => {
         event.preventDefault();
         searchQuery = searchInput.value.trim();
+        renderPosts();
+    });
+
+    sortSelect.addEventListener('change', () => {
+        sortCriterion = sortSelect.value;
         renderPosts();
     });
 
@@ -98,7 +123,8 @@ if (typeof document !== 'undefined') {
 
     function renderPosts(newestId) {
         feedContainer.innerHTML = '';
-        const visiblePosts = getFilteredPosts(posts, searchQuery);
+        const filteredPosts = getFilteredPosts(posts, searchQuery);
+        const visiblePosts = getSortedPosts(filteredPosts, sortCriterion);
 
         if (posts.length === 0) {
             feedContainer.innerHTML = `

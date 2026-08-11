@@ -159,6 +159,29 @@ main section {
   margin-top: 6px;
 }
 
+.sort-control {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.sort-control label {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+#sort-select {
+  width: auto;
+  min-width: 160px;
+  border-color: var(--border-light);
+  border-radius: 9999px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
 #feed-container {
   padding: 0 !important;
   margin: 0 !important;
