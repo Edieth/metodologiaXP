@@ -33,6 +33,16 @@
                     <div id="char-counter">200</div>
                 </div>
 
+                <div class="mb-3">
+                    <label for="post-tag" class="form-label">Tema</label>
+                    <select id="post-tag" class="form-select" aria-label="Selecciona una etiqueta para la publicación">
+                        <option value="General">General</option>
+                        <option value="Estudio">Estudio</option>
+                        <option value="Evento">Evento</option>
+                        <option value="Ayuda">Ayuda</option>
+                    </select>
+                </div>
+
                 <button type="submit" id="publish-btn" class="btn btn-primary">Publicar</button>
             </form>
         </section>
@@ -49,6 +59,16 @@
                     <option value="recent">Recientes</option>
                     <option value="oldest">Antiguas</option>
                     <option value="most-liked">Más gustadas</option>
+                </select>
+            </div>
+            <div class="filter-control mt-3">
+                <label for="tag-filter" class="form-label mb-0">Filtrar por tema</label>
+                <select id="tag-filter" class="form-select" aria-label="Filtrar publicaciones por tema">
+                    <option value="Todas">Todas</option>
+                    <option value="General">General</option>
+                    <option value="Estudio">Estudio</option>
+                    <option value="Evento">Evento</option>
+                    <option value="Ayuda">Ayuda</option>
                 </select>
             </div>
         </section>

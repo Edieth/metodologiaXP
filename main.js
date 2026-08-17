@@ -1,3 +1,13 @@
+const TAG_OPTIONS = ['General', 'Estudio', 'Evento', 'Ayuda'];
+
+function normalizePostTag(post) {
+    const tagValue = String(post?.tag || post?.etiqueta || 'General').trim();
+    if (!tagValue) return 'General';
+
+    const match = TAG_OPTIONS.find(option => option.toLowerCase() === tagValue.toLowerCase());
+    return match || 'General';
+}
+
 function normalizePostReactions(post) {
     if (!Array.isArray(post.comentarios)) {
         post.comentarios = [];
@@ -22,23 +32,32 @@ function normalizePostReactions(post) {
         post.userReaction = null;
     }
 
+    post.tag = normalizePostTag(post);
     post.likes = post.reacciones.likes;
     return post;
 }
 
-function getFilteredPosts(sourcePosts, searchQuery) {
+function getFilteredPosts(sourcePosts, searchQuery, selectedTag = 'Todas') {
+    const posts = Array.isArray(sourcePosts) ? sourcePosts : [];
     const normalizedQuery = (searchQuery || '').trim().toLowerCase();
+    const normalizedTag = selectedTag === 'Todas' ? null : normalizePostTag({ tag: selectedTag });
 
-    if (!normalizedQuery) {
-        return sourcePosts;
+    let filteredPosts = posts;
+
+    if (normalizedTag) {
+        filteredPosts = filteredPosts.filter(post => normalizePostTag(post) === normalizedTag);
     }
 
-    return sourcePosts.filter(post => {
+    if (!normalizedQuery) {
+        return filteredPosts;
+    }
+
+    return filteredPosts.filter(post => {
         const searchableText = [
             post.name,
             post.message,
             ...(Array.isArray(post.comentarios) ? post.comentarios.flatMap(comment => [
-                comment.autor || '', 
+                comment.autor || '',
                 comment.texto || '',
                 ...(Array.isArray(comment.respuestas) ? comment.respuestas.map(r => `${r.autor || ''} ${r.texto || ''}`) : [])
             ]) : [])
@@ -86,6 +105,8 @@ if (typeof document !== 'undefined') {
     const searchForm = document.getElementById('search-form');
     const searchInput = document.getElementById('search-input');
     const sortSelect = document.getElementById('sort-select');
+    const tagFilter = document.getElementById('tag-filter');
+    const postTagSelect = document.getElementById('post-tag');
     const summaryPostsCount = document.getElementById('summary-posts-count');
     const summaryLikesCount = document.getElementById('summary-likes-count');
     const summaryCommentsCount = document.getElementById('summary-comments-count');
@@ -94,6 +115,7 @@ if (typeof document !== 'undefined') {
     let posts = (JSON.parse(localStorage.getItem('posts')) || []).map(normalizePostReactions);
     let searchQuery = '';
     let sortCriterion = 'recent';
+    let selectedTag = 'Todas';
 
     renderPosts();
     renderActivitySummary();
@@ -121,14 +143,19 @@ if (typeof document !== 'undefined') {
         renderPosts();
     });
 
+    tagFilter.addEventListener('change', () => {
+        selectedTag = tagFilter.value;
+        renderPosts();
+    });
+
     postForm.addEventListener('submit', (event) => {
         event.preventDefault();
 
         const name = studentNameInput.value.trim();
         const message = messageTextInput.value.trim();
+        const tag = normalizePostTag({ tag: postTagSelect.value });
 
         if (!name || !message) return;
-
 
         if (message.length > MAX_CHARS) return;
 
@@ -138,6 +165,7 @@ if (typeof document !== 'undefined') {
             message: message,
             timestamp: Date.now(),
             likes: 0,
+            tag: tag,
             reacciones: {
                 likes: 0,
                 love: 0,
@@ -148,15 +176,13 @@ if (typeof document !== 'undefined') {
 
         posts.unshift(newPost);
 
-
         localStorage.setItem('posts', JSON.stringify(posts));
-
 
         renderActivitySummary();
         renderPosts(newPost.id);
 
-
         postForm.reset();
+        postTagSelect.value = 'General';
         charCounter.textContent = MAX_CHARS;
         charCounter.classList.remove('char-counter-warning');
         studentNameInput.focus();
@@ -164,7 +190,7 @@ if (typeof document !== 'undefined') {
 
     function renderPosts(newestId) {
         feedContainer.innerHTML = '';
-        const filteredPosts = getFilteredPosts(posts, searchQuery);
+        const filteredPosts = getFilteredPosts(posts, searchQuery, selectedTag);
         const visiblePosts = getSortedPosts(filteredPosts, sortCriterion);
 
         if (posts.length === 0) {
@@ -198,6 +224,7 @@ if (typeof document !== 'undefined') {
             const initials = getInitials(post.name);
             const avatarColor = getColorFromString(post.name);
             const timeLabel = getRelativeTime(post.timestamp || post.id);
+            const tagLabel = normalizePostTag(post);
 
             const comentarios = Array.isArray(post.comentarios) ? post.comentarios : [];
             const comentariosHTML = comentarios.length > 0
@@ -255,6 +282,7 @@ if (typeof document !== 'undefined') {
                             <button class="edit-btn" data-id="${post.id}" type="button" title="Editar publicación" aria-label="Editar publicación">Editar</button>
                             <button class="delete-btn" data-id="${post.id}" type="button" title="Eliminar publicación" aria-label="Eliminar publicación">Eliminar</button>
                         </div>
+                        <span class="post-tag post-tag--${tagLabel.toLowerCase()}">${tagLabel}</span>
                         <p class="card-text">${escapeHTML(post.message)}</p>
                         <div class="post-actions">
                             <button class="reaction-btn like-btn reaction-btn--like ${post.userReaction === 'likes' ? 'active' : ''}" data-id="${post.id}" data-reaction="likes" title="Me gusta" aria-label="Reaccionar con Me gusta">
