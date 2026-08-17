@@ -557,9 +557,9 @@ main section {
   background-color: var(--twitter-blue-hover) !important;
 }
 
+.comment-reply-btn,
 .comment-edit-btn,
 .comment-delete-btn {
-  margin-left: auto;
   border: none;
   background: transparent;
   color: var(--text-muted);
@@ -571,9 +571,11 @@ main section {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.comment-edit-btn { margin-left: auto; }
+.comment-reply-btn { margin-left: auto; }
+.comment-edit-btn { margin-left: 2px; }
 .comment-delete-btn { margin-left: 2px; }
 
+.comment-reply-btn:hover,
 .comment-edit-btn:hover {
   background-color: rgba(29, 155, 240, 0.1);
   color: var(--twitter-blue);

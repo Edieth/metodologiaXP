@@ -37,7 +37,11 @@ function getFilteredPosts(sourcePosts, searchQuery) {
         const searchableText = [
             post.name,
             post.message,
-            ...(Array.isArray(post.comentarios) ? post.comentarios.map(comment => `${comment.autor || ''} ${comment.texto || ''}`) : [])
+            ...(Array.isArray(post.comentarios) ? post.comentarios.flatMap(comment => [
+                comment.autor || '', 
+                comment.texto || '',
+                ...(Array.isArray(comment.respuestas) ? comment.respuestas.map(r => `${r.autor || ''} ${r.texto || ''}`) : [])
+            ]) : [])
         ]
             .filter(Boolean)
             .join(' ')
@@ -197,17 +201,48 @@ if (typeof document !== 'undefined') {
 
             const comentarios = Array.isArray(post.comentarios) ? post.comentarios : [];
             const comentariosHTML = comentarios.length > 0
-                ? comentarios.map(c => `
+                ? comentarios.map(c => {
+                    const respuestas = Array.isArray(c.respuestas) ? c.respuestas : [];
+                    const respuestasHTML = respuestas.map(r => `
+                        <div class="reply-item mb-2">
+                            <div class="comment-meta">
+                                <span class="comment-author">${escapeHTML(r.autor)}</span>
+                                <span class="comment-time">· ${getRelativeTime(r.timestamp || r.id)}</span>
+                            </div>
+                            <p class="comment-text m-0">${escapeHTML(r.texto)}</p>
+                        </div>
+                    `).join('');
+
+                    return `
                     <div class="comment-item">
                         <div class="comment-meta">
                             <span class="comment-author">${escapeHTML(c.autor)}</span>
                             <span class="comment-time">· ${getRelativeTime(c.timestamp || c.id)}</span>
+                            <button class="comment-reply-btn" data-post-id="${post.id}" data-comment-id="${c.id}" type="button" title="Responder comentario">Responder</button>
                             <button class="comment-edit-btn" data-post-id="${post.id}" data-comment-id="${c.id}" type="button" title="Editar comentario">Editar</button>
                             <button class="comment-delete-btn" data-post-id="${post.id}" data-comment-id="${c.id}" type="button" title="Eliminar comentario">Eliminar</button>
                         </div>
                         <p class="comment-text">${escapeHTML(c.texto)}</p>
+                        
+                        <div class="replies-section ms-4 border-start border-2 ps-3 mt-2">
+                            ${respuestasHTML}
+                            <form class="reply-form mt-2 d-none" data-post-id="${post.id}" data-comment-id="${c.id}">
+                                <div class="row g-2 mb-2">
+                                    <div class="col-12 col-sm-4">
+                                        <input type="text" class="form-control form-control-sm reply-author-input" placeholder="Tu nombre" required maxlength="40">
+                                    </div>
+                                    <div class="col-12 col-sm-8">
+                                        <input type="text" class="form-control form-control-sm reply-text-input" placeholder="Escribe una respuesta..." required maxlength="280">
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end gap-2">
+                                    <button type="button" class="btn btn-sm btn-secondary cancel-reply-btn" style="border-radius: 9999px; padding: 4px 14px; font-size: 0.8rem; font-weight: 700;">Cancelar</button>
+                                    <button type="submit" class="btn btn-sm btn-primary comment-submit-btn">Responder</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                `).join('')
+                `}).join('')
                 : '<div class="no-comments-text">No hay comentarios aún.</div>';
 
             postElement.innerHTML = `
@@ -456,6 +491,58 @@ if (typeof document !== 'undefined') {
                     localStorage.setItem('posts', JSON.stringify(posts));
                     renderPosts();
                 });
+            });
+        });
+
+        feedContainer.querySelectorAll('.comment-reply-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const commentElement = e.currentTarget.closest('.comment-item');
+                const replyForm = commentElement.querySelector('.reply-form');
+                replyForm.classList.remove('d-none');
+                replyForm.querySelector('.reply-author-input').focus();
+            });
+        });
+
+        feedContainer.querySelectorAll('.cancel-reply-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const replyForm = e.currentTarget.closest('.reply-form');
+                replyForm.classList.add('d-none');
+                replyForm.reset();
+            });
+        });
+
+        feedContainer.querySelectorAll('.reply-form').forEach(form => {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const postId = Number(form.dataset.postId);
+                const commentId = Number(form.dataset.commentId);
+                const authorInput = form.querySelector('.reply-author-input');
+                const textInput = form.querySelector('.reply-text-input');
+
+                const autor = authorInput.value.trim();
+                const texto = textInput.value.trim();
+
+                if (!autor || !texto) return;
+
+                const post = posts.find(p => p.id === postId);
+                if (!post) return;
+
+                const comment = post.comentarios?.find(c => c.id === commentId);
+                if (!comment) return;
+
+                if (!Array.isArray(comment.respuestas)) {
+                    comment.respuestas = [];
+                }
+
+                comment.respuestas.push({
+                    id: Date.now(),
+                    autor: autor,
+                    texto: texto,
+                    timestamp: Date.now()
+                });
+
+                localStorage.setItem('posts', JSON.stringify(posts));
+                renderPosts();
             });
         });
     }
