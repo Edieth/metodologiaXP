@@ -167,6 +167,25 @@ main section {
   gap: 10px;
 }
 
+.favorites-filter-control {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+#favorites-only-filter {
+  cursor: pointer;
+}
+
+#favorites-only-filter:checked {
+  background-color: #f59e0b;
+  border-color: #f59e0b;
+}
+
 .sort-control label,
 .filter-control label {
   color: var(--text-muted);
@@ -298,6 +317,10 @@ main section {
   background-color: rgba(0, 0, 0, 0.03) !important;
 }
 
+#feed-container .card.post-favorite {
+  box-shadow: inset 3px 0 0 #f59e0b !important;
+}
+
 #feed-container .card-body {
   padding: 0 !important;
   min-width: 0;
@@ -422,6 +445,31 @@ main section {
 .post-time {
   color: var(--text-muted);
   font-size: 13px;
+}
+
+.favorite-btn {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 9999px;
+  white-space: nowrap;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.favorite-btn:hover,
+.favorite-btn.active {
+  background-color: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
+.post-header .edit-btn {
+  margin-left: 0;
 }
 
 .edit-btn {

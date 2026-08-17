@@ -33,16 +33,21 @@ function normalizePostReactions(post) {
     }
 
     post.tag = normalizePostTag(post);
+    post.favorite = post.favorite === true;
     post.likes = post.reacciones.likes;
     return post;
 }
 
-function getFilteredPosts(sourcePosts, searchQuery, selectedTag = 'Todas') {
+function getFilteredPosts(sourcePosts, searchQuery, selectedTag = 'Todas', favoritesOnly = false) {
     const posts = Array.isArray(sourcePosts) ? sourcePosts : [];
     const normalizedQuery = (searchQuery || '').trim().toLowerCase();
     const normalizedTag = selectedTag === 'Todas' ? null : normalizePostTag({ tag: selectedTag });
 
     let filteredPosts = posts;
+
+    if (favoritesOnly) {
+        filteredPosts = filteredPosts.filter(post => post.favorite === true);
+    }
 
     if (normalizedTag) {
         filteredPosts = filteredPosts.filter(post => normalizePostTag(post) === normalizedTag);
@@ -70,6 +75,14 @@ function getFilteredPosts(sourcePosts, searchQuery, selectedTag = 'Todas') {
     });
 }
 
+function togglePostFavorite(sourcePosts, postId) {
+    const post = sourcePosts.find(item => item.id === postId);
+    if (!post) return null;
+
+    post.favorite = post.favorite !== true;
+    return post;
+}
+
 function getSortedPosts(sourcePosts, sortCriterion) {
     const sortedPosts = [...sourcePosts];
     const getTimestamp = post => Number(post.timestamp || post.id || 0);
@@ -91,7 +104,7 @@ function getSortedPosts(sourcePosts, sortCriterion) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { getFilteredPosts, getSortedPosts, normalizePostReactions };
+    module.exports = { getFilteredPosts, getSortedPosts, normalizePostReactions, togglePostFavorite };
 }
 
 if (typeof document !== 'undefined') {
@@ -106,6 +119,7 @@ if (typeof document !== 'undefined') {
     const searchInput = document.getElementById('search-input');
     const sortSelect = document.getElementById('sort-select');
     const tagFilter = document.getElementById('tag-filter');
+    const favoritesOnlyFilter = document.getElementById('favorites-only-filter');
     const postTagSelect = document.getElementById('post-tag');
     const summaryPostsCount = document.getElementById('summary-posts-count');
     const summaryLikesCount = document.getElementById('summary-likes-count');
@@ -116,6 +130,7 @@ if (typeof document !== 'undefined') {
     let searchQuery = '';
     let sortCriterion = 'recent';
     let selectedTag = 'Todas';
+    let favoritesOnly = false;
 
     renderPosts();
     renderActivitySummary();
@@ -148,6 +163,11 @@ if (typeof document !== 'undefined') {
         renderPosts();
     });
 
+    favoritesOnlyFilter.addEventListener('change', () => {
+        favoritesOnly = favoritesOnlyFilter.checked;
+        renderPosts();
+    });
+
     postForm.addEventListener('submit', (event) => {
         event.preventDefault();
 
@@ -171,7 +191,8 @@ if (typeof document !== 'undefined') {
                 love: 0,
                 haha: 0
             },
-            comentarios: []
+            comentarios: [],
+            favorite: false
         };
 
         posts.unshift(newPost);
@@ -190,7 +211,7 @@ if (typeof document !== 'undefined') {
 
     function renderPosts(newestId) {
         feedContainer.innerHTML = '';
-        const filteredPosts = getFilteredPosts(posts, searchQuery, selectedTag);
+        const filteredPosts = getFilteredPosts(posts, searchQuery, selectedTag, favoritesOnly);
         const visiblePosts = getSortedPosts(filteredPosts, sortCriterion);
 
         if (posts.length === 0) {
@@ -217,6 +238,7 @@ if (typeof document !== 'undefined') {
             normalizePostReactions(post);
             const postElement = document.createElement('article');
             postElement.className = 'card';
+            postElement.classList.toggle('post-favorite', post.favorite === true);
             if (post.id === newestId) {
                 postElement.classList.add('post-new');
             }
@@ -279,6 +301,7 @@ if (typeof document !== 'undefined') {
                         <div class="post-header">
                             <h5 class="card-title">${escapeHTML(post.name)}</h5>
                             <span class="post-time">· ${timeLabel}</span>
+                            <button class="favorite-btn ${post.favorite ? 'active' : ''}" data-id="${post.id}" type="button" aria-pressed="${post.favorite}" title="${post.favorite ? 'Quitar de Favoritos' : 'Marcar como favorita'}" aria-label="${post.favorite ? 'Quitar de Favoritos' : 'Marcar como favorita'}">${post.favorite ? '★ Favorita' : '☆ Marcar favorita'}</button>
                             <button class="edit-btn" data-id="${post.id}" type="button" title="Editar publicación" aria-label="Editar publicación">Editar</button>
                             <button class="delete-btn" data-id="${post.id}" type="button" title="Eliminar publicación" aria-label="Eliminar publicación">Eliminar</button>
                         </div>
@@ -363,6 +386,17 @@ if (typeof document !== 'undefined') {
                 posts = posts.filter(p => p.id !== id);
                 localStorage.setItem('posts', JSON.stringify(posts));
                 renderActivitySummary();
+                renderPosts();
+            });
+        });
+
+        feedContainer.querySelectorAll('.favorite-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = Number(e.currentTarget.dataset.id);
+                const updatedPost = togglePostFavorite(posts, id);
+                if (!updatedPost) return;
+
+                localStorage.setItem('posts', JSON.stringify(posts));
                 renderPosts();
             });
         });
