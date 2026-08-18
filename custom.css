@@ -261,6 +261,26 @@ main section {
   color: #842029;
 }
 
+.backup-controls {
+  border-top: 1px solid var(--border-light);
+}
+
+.backup-message {
+  min-height: 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.backup-message--error {
+  color: #b42318;
+  font-weight: 600;
+}
+
+.backup-message--success {
+  color: #0f766e;
+  font-weight: 600;
+}
+
 .activity-summary {
   border-top: 1px solid var(--border-light);
   border-bottom: 1px solid var(--border-light);

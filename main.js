@@ -103,6 +103,122 @@ function getSortedPosts(sourcePosts, sortCriterion) {
     return sortedPosts.sort((a, b) => getTimestamp(b) - getTimestamp(a));
 }
 
+function normalizeImportedComment(comment, index) {
+    if (!comment || typeof comment !== 'object') {
+        throw new Error(`El comentario ${index + 1} tiene un formato inválido.`);
+    }
+
+    const texto = typeof comment.texto === 'string' ? comment.texto.trim() : '';
+    const autor = typeof comment.autor === 'string' ? comment.autor.trim() : '';
+
+    if (!texto || !autor) {
+        throw new Error(`El comentario ${index + 1} necesita autor y texto.`);
+    }
+
+    const respuestas = Array.isArray(comment.respuestas)
+        ? comment.respuestas.map((respuesta, respuestaIndex) => normalizeImportedReply(respuesta, respuestaIndex))
+        : [];
+
+    return {
+        id: Number(comment.id) || Date.now() + index,
+        autor,
+        texto,
+        timestamp: Number(comment.timestamp) || Date.now() + index,
+        respuestas
+    };
+}
+
+function normalizeImportedReply(reply, index) {
+    if (!reply || typeof reply !== 'object') {
+        throw new Error(`La respuesta ${index + 1} tiene un formato inválido.`);
+    }
+
+    const texto = typeof reply.texto === 'string' ? reply.texto.trim() : '';
+    const autor = typeof reply.autor === 'string' ? reply.autor.trim() : '';
+
+    if (!texto || !autor) {
+        throw new Error(`La respuesta ${index + 1} necesita autor y texto.`);
+    }
+
+    return {
+        id: Number(reply.id) || Date.now() + index,
+        autor,
+        texto,
+        timestamp: Number(reply.timestamp) || Date.now() + index
+    };
+}
+
+function normalizeImportedReactions(post, index) {
+    const rawReacciones = post?.reacciones && typeof post.reacciones === 'object' ? post.reacciones : {};
+    const reactionValues = {
+        likes: Number(rawReacciones.likes ?? rawReacciones.meGusta ?? post?.likes ?? 0) || 0,
+        love: Number(rawReacciones.love ?? rawReacciones.meEncanta ?? 0) || 0,
+        haha: Number(rawReacciones.haha ?? rawReacciones.meDivierte ?? 0) || 0
+    };
+
+    return {
+        likes: Math.max(0, Number(reactionValues.likes) || 0),
+        love: Math.max(0, Number(reactionValues.love) || 0),
+        haha: Math.max(0, Number(reactionValues.haha) || 0)
+    };
+}
+
+function normalizeImportedPosts(rawData) {
+    if (rawData === null || typeof rawData === 'undefined') {
+        throw new Error('El archivo está vacío.');
+    }
+
+    const candidate = Array.isArray(rawData) ? rawData : (rawData && typeof rawData === 'object' && Array.isArray(rawData.posts) ? rawData.posts : null);
+    if (!candidate) {
+        throw new Error('El archivo JSON no contiene una lista válida de publicaciones.');
+    }
+
+    return candidate.map((post, index) => {
+        if (!post || typeof post !== 'object') {
+            throw new Error(`La publicación ${index + 1} no tiene un formato válido.`);
+        }
+
+        const name = typeof post.name === 'string' ? post.name.trim() : '';
+        const message = typeof post.message === 'string' ? post.message.trim() : '';
+
+        if (!name || !message) {
+            throw new Error(`La publicación ${index + 1} necesita nombre y mensaje.`);
+        }
+
+        const comentarios = Array.isArray(post.comentarios)
+            ? post.comentarios.map((comment, commentIndex) => normalizeImportedComment(comment, commentIndex))
+            : [];
+
+        const reacciones = normalizeImportedReactions(post, index);
+        const userReactionValue = typeof post.userReaction === 'string' && ['likes', 'love', 'haha'].includes(post.userReaction)
+            ? post.userReaction
+            : null;
+
+        return normalizePostReactions({
+            id: Number(post.id) || Date.now() + index,
+            name,
+            message,
+            timestamp: Number(post.timestamp) || Date.now() + index,
+            likes: Number(post.likes) || reacciones.likes,
+            tag: post.tag || post.etiqueta || 'General',
+            favorite: Boolean(post.favorite),
+            reacciones,
+            comentarios,
+            userReaction: userReactionValue
+        });
+    });
+}
+
+function exportPostsAsJson(posts) {
+    const payload = {
+        exportedAt: new Date().toISOString(),
+        version: 1,
+        posts: (Array.isArray(posts) ? posts : []).map(post => normalizePostReactions({ ...post }))
+    };
+
+    return JSON.stringify(payload, null, 2);
+}
+
 const DRAFT_STORAGE_KEY = 'postDraft';
 
 function saveDraftToStorage(storage, draft) {
@@ -138,6 +254,8 @@ if (typeof module !== 'undefined' && module.exports) {
         getFilteredPosts,
         getSortedPosts,
         normalizePostReactions,
+        normalizeImportedPosts,
+        exportPostsAsJson,
         togglePostFavorite,
         saveDraftToStorage,
         loadDraftFromStorage,
@@ -160,6 +278,10 @@ if (typeof document !== 'undefined') {
     const tagFilter = document.getElementById('tag-filter');
     const favoritesOnlyFilter = document.getElementById('favorites-only-filter');
     const postTagSelect = document.getElementById('post-tag');
+    const exportBackupBtn = document.getElementById('export-backup-btn');
+    const importBackupBtn = document.getElementById('import-backup-btn');
+    const importBackupInput = document.getElementById('import-backup-input');
+    const backupMessage = document.getElementById('backup-message');
     const summaryPostsCount = document.getElementById('summary-posts-count');
     const summaryLikesCount = document.getElementById('summary-likes-count');
     const summaryCommentsCount = document.getElementById('summary-comments-count');
@@ -203,9 +325,78 @@ if (typeof document !== 'undefined') {
         localStorage.removeItem(DRAFT_STORAGE_KEY);
     }
 
+    function showBackupMessage(message, isError = false) {
+        if (!backupMessage) {
+            window.alert(message);
+            return;
+        }
+
+        backupMessage.textContent = message;
+        backupMessage.classList.toggle('backup-message--error', isError);
+        backupMessage.classList.toggle('backup-message--success', !isError);
+    }
+
+    function handleExportBackup() {
+        const json = exportPostsAsJson(posts);
+        const blob = new Blob([json], { type: 'application/json' });
+        const fileUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+
+        link.href = fileUrl;
+        link.download = `muro-respaldo-${timestamp}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(fileUrl);
+
+        showBackupMessage('Respaldo exportado correctamente.');
+    }
+
+    async function handleImportBackup(event) {
+        const [selectedFile] = event.target.files || [];
+        if (!selectedFile) return;
+
+        try {
+            const fileText = await selectedFile.text();
+            const parsed = JSON.parse(fileText);
+            const importedPosts = normalizeImportedPosts(parsed);
+            const confirmed = window.confirm('¿Deseas reemplazar los datos actuales con este respaldo?');
+
+            if (!confirmed) {
+                showBackupMessage('Importación cancelada. Los datos actuales se mantienen.');
+                event.target.value = '';
+                return;
+            }
+
+            posts = importedPosts;
+            localStorage.setItem('posts', JSON.stringify(posts));
+            currentPage = 1;
+            renderActivitySummary();
+            renderPosts();
+            showBackupMessage(`Respaldo importado correctamente: ${posts.length} publicaciones.`);
+        } catch (error) {
+            showBackupMessage(error?.message || 'El archivo no es válido o está corrupto.', true);
+        } finally {
+            event.target.value = '';
+        }
+    }
+
     handleLoadDraft();
     renderPosts();
     renderActivitySummary();
+
+    if (exportBackupBtn) {
+        exportBackupBtn.addEventListener('click', handleExportBackup);
+    }
+
+    if (importBackupBtn) {
+        importBackupBtn.addEventListener('click', () => importBackupInput?.click());
+    }
+
+    if (importBackupInput) {
+        importBackupInput.addEventListener('change', handleImportBackup);
+    }
 
     if (prevPageBtn) {
         prevPageBtn.addEventListener('click', () => {

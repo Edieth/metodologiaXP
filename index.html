@@ -105,6 +105,15 @@
 
         </section>
 
+        <div class="backup-controls px-3 pb-3 pt-2">
+            <div class="d-flex justify-content-end gap-2 flex-wrap">
+                <button id="export-backup-btn" type="button" class="btn btn-outline-primary btn-sm">Exportar</button>
+                <button id="import-backup-btn" type="button" class="btn btn-outline-primary btn-sm">Importar</button>
+            </div>
+            <input id="import-backup-input" type="file" accept="application/json,.json" hidden>
+            <div id="backup-message" class="backup-message mt-2" aria-live="polite"></div>
+        </div>
+
         <nav id="pagination-controls" class="d-flex justify-content-center align-items-center gap-3 mt-4 mb-4" aria-label="Navegación de publicaciones">
             <button id="prev-page-btn" class="btn btn-outline-primary" disabled>Anterior</button>
             <span id="page-indicator" class="fw-bold">Página 1 de 1</span>
