@@ -163,6 +163,9 @@ if (typeof document !== 'undefined') {
     const summaryPostsCount = document.getElementById('summary-posts-count');
     const summaryLikesCount = document.getElementById('summary-likes-count');
     const summaryCommentsCount = document.getElementById('summary-comments-count');
+    const prevPageBtn = document.getElementById('prev-page-btn');
+    const nextPageBtn = document.getElementById('next-page-btn');
+    const pageIndicator = document.getElementById('page-indicator');
     const MAX_CHARS = 200;
 
     let posts = (JSON.parse(localStorage.getItem('posts')) || []).map(normalizePostReactions);
@@ -170,6 +173,8 @@ if (typeof document !== 'undefined') {
     let sortCriterion = 'recent';
     let selectedTag = 'Todas';
     let favoritesOnly = false;
+    let currentPage = 1;
+    const PAGE_SIZE = 5;
 
     function updateCharCounter() {
         if (!charCounter || !messageTextInput) return;
@@ -202,6 +207,22 @@ if (typeof document !== 'undefined') {
     renderPosts();
     renderActivitySummary();
 
+    if (prevPageBtn) {
+        prevPageBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderPosts();
+            }
+        });
+    }
+
+    if (nextPageBtn) {
+        nextPageBtn.addEventListener('click', () => {
+            currentPage++;
+            renderPosts();
+        });
+    }
+
     studentNameInput.addEventListener('input', handleSaveDraft);
 
     messageTextInput.addEventListener('input', () => {
@@ -221,27 +242,32 @@ if (typeof document !== 'undefined') {
 
     searchInput.addEventListener('input', () => {
         searchQuery = searchInput.value;
+        currentPage = 1;
         renderPosts();
     });
 
     searchForm.addEventListener('submit', (event) => {
         event.preventDefault();
         searchQuery = searchInput.value.trim();
+        currentPage = 1;
         renderPosts();
     });
 
     sortSelect.addEventListener('change', () => {
         sortCriterion = sortSelect.value;
+        currentPage = 1;
         renderPosts();
     });
 
     tagFilter.addEventListener('change', () => {
         selectedTag = tagFilter.value;
+        currentPage = 1;
         renderPosts();
     });
 
     favoritesOnlyFilter.addEventListener('change', () => {
         favoritesOnly = favoritesOnlyFilter.checked;
+        currentPage = 1;
         renderPosts();
     });
 
@@ -278,6 +304,7 @@ if (typeof document !== 'undefined') {
 
         handleClearDraft();
 
+        currentPage = 1;
         renderActivitySummary();
         renderPosts(newPost.id);
 
@@ -292,6 +319,21 @@ if (typeof document !== 'undefined') {
         const filteredPosts = getFilteredPosts(posts, searchQuery, selectedTag, favoritesOnly);
         const visiblePosts = getSortedPosts(filteredPosts, sortCriterion);
 
+        const totalElements = visiblePosts.length;
+        const totalPages = Math.ceil(totalElements / PAGE_SIZE) || 1;
+
+        if (currentPage > totalPages) {
+            currentPage = totalPages;
+        }
+
+        const startIndex = (currentPage - 1) * PAGE_SIZE;
+        const endIndex = currentPage * PAGE_SIZE;
+        const paginatedPosts = visiblePosts.slice(startIndex, endIndex);
+
+        if (pageIndicator) pageIndicator.textContent = `Página ${currentPage} de ${totalPages}`;
+        if (prevPageBtn) prevPageBtn.disabled = currentPage === 1;
+        if (nextPageBtn) nextPageBtn.disabled = currentPage === totalPages;
+
         if (posts.length === 0) {
             feedContainer.innerHTML = `
                 <div id="empty-state">
@@ -302,7 +344,7 @@ if (typeof document !== 'undefined') {
             return;
         }
 
-        if (visiblePosts.length === 0) {
+        if (paginatedPosts.length === 0) {
             feedContainer.innerHTML = `
                 <div id="empty-state">
                     <p>No se encontraron publicaciones.</p>
@@ -312,7 +354,7 @@ if (typeof document !== 'undefined') {
             return;
         }
 
-        visiblePosts.forEach(post => {
+        paginatedPosts.forEach(post => {
             normalizePostReactions(post);
             const postElement = document.createElement('article');
             postElement.className = 'card';
