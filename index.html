@@ -18,7 +18,7 @@
     </header>
 
     <main class="container my-4">
-        <section class="mb-5">
+        <section id="publisher-section" class="mb-5">
             <form id="post-form" class="card p-4 shadow-sm">
                 <div class="mb-3">
                     <label for="student-name" class="form-label">Nombre</label>
@@ -50,7 +50,12 @@
             </form>
         </section>
 
-        <section class="mb-3 px-3 pt-3">
+        <nav class="view-tabs px-3 pt-3" aria-label="Vistas de publicaciones">
+            <button id="show-feed-btn" type="button" class="view-tab active" aria-pressed="true">Muro</button>
+            <button id="show-moderation-btn" type="button" class="view-tab" aria-pressed="false">Moderación</button>
+        </nav>
+
+        <section id="feed-controls-section" class="mb-3 px-3 pt-3">
             <form id="search-form" class="d-flex gap-2">
                 <input type="text" id="search-input" class="form-control" placeholder="Buscar por autor o contenido" aria-label="Buscar publicaciones">
                 <button type="submit" class="btn btn-outline-primary">Buscar</button>
@@ -99,6 +104,14 @@
                     <strong id="summary-comments-count" class="activity-summary__value">0</strong>
                 </article>
             </div>
+        </section>
+
+        <section id="moderation-view" class="moderation-view px-3 py-3 d-none" aria-live="polite">
+            <div class="moderation-view__header">
+                <h2>Moderación</h2>
+                <p>Revisa los reportes sin ocultar automáticamente las publicaciones del muro.</p>
+            </div>
+            <div id="moderation-list"></div>
         </section>
 
         <section id="feed-container">

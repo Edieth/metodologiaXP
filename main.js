@@ -1,4 +1,17 @@
 const TAG_OPTIONS = ['General', 'Estudio', 'Evento', 'Ayuda'];
+const REPORT_REASONS = ['Spam', 'Ofensivo', 'Otro'];
+
+function normalizePostReport(report) {
+    if (!report || typeof report !== 'object') return null;
+
+    const reason = REPORT_REASONS.includes(report.reason) ? report.reason : null;
+    if (!reason) return null;
+
+    return {
+        reason,
+        timestamp: Number(report.timestamp) || Date.now()
+    };
+}
 
 function normalizePostTag(post) {
     const tagValue = String(post?.tag || post?.etiqueta || 'General').trim();
@@ -34,6 +47,7 @@ function normalizePostReactions(post) {
 
     post.tag = normalizePostTag(post);
     post.favorite = post.favorite === true;
+    post.report = normalizePostReport(post.report);
     post.likes = post.reacciones.likes;
     return post;
 }
@@ -80,6 +94,25 @@ function togglePostFavorite(sourcePosts, postId) {
     if (!post) return null;
 
     post.favorite = post.favorite !== true;
+    return post;
+}
+
+function reportPost(sourcePosts, postId, reason) {
+    const post = sourcePosts.find(item => item.id === postId);
+    if (!post || post.report || !REPORT_REASONS.includes(reason)) return null;
+
+    post.report = {
+        reason,
+        timestamp: Date.now()
+    };
+    return post;
+}
+
+function discardPostReport(sourcePosts, postId) {
+    const post = sourcePosts.find(item => item.id === postId);
+    if (!post || !post.report) return null;
+
+    post.report = null;
     return post;
 }
 
@@ -202,6 +235,7 @@ function normalizeImportedPosts(rawData) {
             likes: Number(post.likes) || reacciones.likes,
             tag: post.tag || post.etiqueta || 'General',
             favorite: Boolean(post.favorite),
+            report: normalizePostReport(post.report),
             reacciones,
             comentarios,
             userReaction: userReactionValue
@@ -257,6 +291,9 @@ if (typeof module !== 'undefined' && module.exports) {
         normalizeImportedPosts,
         exportPostsAsJson,
         togglePostFavorite,
+        reportPost,
+        discardPostReport,
+        normalizePostReport,
         saveDraftToStorage,
         loadDraftFromStorage,
         DRAFT_STORAGE_KEY
@@ -267,6 +304,7 @@ if (typeof document !== 'undefined') {
     document.addEventListener('DOMContentLoaded', () => {
 
     const postForm = document.getElementById('post-form');
+    const publisherSection = document.getElementById('publisher-section');
     const studentNameInput = document.getElementById('student-name');
     const messageTextInput = document.getElementById('message-text');
     const discardDraftBtn = document.getElementById('discard-draft-btn');
@@ -277,6 +315,11 @@ if (typeof document !== 'undefined') {
     const sortSelect = document.getElementById('sort-select');
     const tagFilter = document.getElementById('tag-filter');
     const favoritesOnlyFilter = document.getElementById('favorites-only-filter');
+    const feedControlsSection = document.getElementById('feed-controls-section');
+    const showFeedBtn = document.getElementById('show-feed-btn');
+    const showModerationBtn = document.getElementById('show-moderation-btn');
+    const moderationView = document.getElementById('moderation-view');
+    const moderationList = document.getElementById('moderation-list');
     const postTagSelect = document.getElementById('post-tag');
     const exportBackupBtn = document.getElementById('export-backup-btn');
     const importBackupBtn = document.getElementById('import-backup-btn');
@@ -296,6 +339,7 @@ if (typeof document !== 'undefined') {
     let selectedTag = 'Todas';
     let favoritesOnly = false;
     let currentPage = 1;
+    let currentView = 'feed';
     const PAGE_SIZE = 5;
 
     function updateCharCounter() {
@@ -374,6 +418,7 @@ if (typeof document !== 'undefined') {
             currentPage = 1;
             renderActivitySummary();
             renderPosts();
+            renderModeration();
             showBackupMessage(`Respaldo importado correctamente: ${posts.length} publicaciones.`);
         } catch (error) {
             showBackupMessage(error?.message || 'El archivo no es válido o está corrupto.', true);
@@ -385,6 +430,10 @@ if (typeof document !== 'undefined') {
     handleLoadDraft();
     renderPosts();
     renderActivitySummary();
+    renderModeration();
+
+    showFeedBtn.addEventListener('click', () => setCurrentView('feed'));
+    showModerationBtn.addEventListener('click', () => setCurrentView('moderation'));
 
     if (exportBackupBtn) {
         exportBackupBtn.addEventListener('click', handleExportBackup);
@@ -486,7 +535,8 @@ if (typeof document !== 'undefined') {
                 haha: 0
             },
             comentarios: [],
-            favorite: false
+            favorite: false,
+            report: null
         };
 
         posts.unshift(newPost);
@@ -558,6 +608,9 @@ if (typeof document !== 'undefined') {
             const avatarColor = getColorFromString(post.name);
             const timeLabel = getRelativeTime(post.timestamp || post.id);
             const tagLabel = normalizePostTag(post);
+            const reportStatusHTML = post.report
+                ? `<span class="report-status" title="Publicación reportada">⚑ Reportada: ${escapeHTML(post.report.reason)}</span>`
+                : '';
 
             const comentarios = Array.isArray(post.comentarios) ? post.comentarios : [];
             const comentariosHTML = comentarios.length > 0
@@ -613,11 +666,26 @@ if (typeof document !== 'undefined') {
                             <h5 class="card-title">${escapeHTML(post.name)}</h5>
                             <span class="post-time">· ${timeLabel}</span>
                             <button class="favorite-btn ${post.favorite ? 'active' : ''}" data-id="${post.id}" type="button" aria-pressed="${post.favorite}" title="${post.favorite ? 'Quitar de Favoritos' : 'Marcar como favorita'}" aria-label="${post.favorite ? 'Quitar de Favoritos' : 'Marcar como favorita'}">${post.favorite ? '★ Favorita' : '☆ Marcar favorita'}</button>
+                            <button class="report-btn" data-id="${post.id}" type="button" ${post.report ? 'disabled' : ''} title="${post.report ? 'Esta publicación ya fue reportada' : 'Reportar publicación'}">${post.report ? 'Reportada' : 'Reportar'}</button>
                             <button class="edit-btn" data-id="${post.id}" type="button" title="Editar publicación" aria-label="Editar publicación">Editar</button>
                             <button class="delete-btn" data-id="${post.id}" type="button" title="Eliminar publicación" aria-label="Eliminar publicación">Eliminar</button>
                         </div>
                         <span class="post-tag post-tag--${tagLabel.toLowerCase()}">${tagLabel}</span>
+                        ${reportStatusHTML}
                         <p class="card-text">${escapeHTML(post.message)}</p>
+                        <form class="report-form d-none" data-post-id="${post.id}">
+                            <label class="form-label" for="report-reason-${post.id}">Motivo del reporte</label>
+                            <div class="report-form__controls">
+                                <select id="report-reason-${post.id}" class="form-select form-select-sm report-reason" required>
+                                    <option value="" selected disabled>Selecciona un motivo</option>
+                                    <option value="Spam">Spam</option>
+                                    <option value="Ofensivo">Ofensivo</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                                <button type="button" class="btn btn-sm btn-outline-secondary cancel-report-btn">Cancelar</button>
+                                <button type="submit" class="btn btn-sm btn-danger">Confirmar reporte</button>
+                            </div>
+                        </form>
                         <div class="post-actions">
                             <button class="reaction-btn like-btn reaction-btn--like ${post.userReaction === 'likes' ? 'active' : ''}" data-id="${post.id}" data-reaction="likes" title="Me gusta" aria-label="Reaccionar con Me gusta">
                                 <span>👍</span> <span>Me gusta</span> <strong>(${post.reacciones.likes})</strong>
@@ -709,6 +777,37 @@ if (typeof document !== 'undefined') {
 
                 localStorage.setItem('posts', JSON.stringify(posts));
                 renderPosts();
+            });
+        });
+
+        feedContainer.querySelectorAll('.report-btn:not([disabled])').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const cardBody = e.currentTarget.closest('.card-body');
+                const reportForm = cardBody.querySelector('.report-form');
+                reportForm.classList.remove('d-none');
+                reportForm.querySelector('.report-reason').focus();
+            });
+        });
+
+        feedContainer.querySelectorAll('.cancel-report-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const reportForm = e.currentTarget.closest('.report-form');
+                reportForm.reset();
+                reportForm.classList.add('d-none');
+            });
+        });
+
+        feedContainer.querySelectorAll('.report-form').forEach(form => {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const postId = Number(form.dataset.postId);
+                const reason = form.querySelector('.report-reason').value;
+                const updatedPost = reportPost(posts, postId, reason);
+                if (!updatedPost) return;
+
+                localStorage.setItem('posts', JSON.stringify(posts));
+                renderPosts();
+                renderModeration();
             });
         });
 
@@ -915,6 +1014,87 @@ if (typeof document !== 'undefined') {
                 });
 
                 localStorage.setItem('posts', JSON.stringify(posts));
+                renderPosts();
+            });
+        });
+    }
+
+    function setCurrentView(view) {
+        currentView = view === 'moderation' ? 'moderation' : 'feed';
+        const showingModeration = currentView === 'moderation';
+
+        publisherSection.classList.toggle('d-none', showingModeration);
+        feedControlsSection.classList.toggle('d-none', showingModeration);
+        document.getElementById('activity-summary').classList.toggle('d-none', showingModeration);
+        feedContainer.classList.toggle('d-none', showingModeration);
+        document.getElementById('pagination-controls').classList.toggle('d-none', showingModeration);
+        document.querySelector('.backup-controls').classList.toggle('d-none', showingModeration);
+        moderationView.classList.toggle('d-none', !showingModeration);
+
+        showFeedBtn.classList.toggle('active', !showingModeration);
+        showModerationBtn.classList.toggle('active', showingModeration);
+        showFeedBtn.setAttribute('aria-pressed', String(!showingModeration));
+        showModerationBtn.setAttribute('aria-pressed', String(showingModeration));
+
+        if (showingModeration) renderModeration();
+    }
+
+    function renderModeration() {
+        const reportedPosts = posts.filter(post => post.report);
+        moderationList.innerHTML = '';
+
+        if (reportedPosts.length === 0) {
+            moderationList.innerHTML = `
+                <div class="moderation-empty">
+                    <p>No hay publicaciones reportadas.</p>
+                    <span>Los nuevos reportes aparecerán aquí para su revisión.</span>
+                </div>
+            `;
+            return;
+        }
+
+        reportedPosts.forEach(post => {
+            const item = document.createElement('article');
+            item.className = 'moderation-item';
+            item.innerHTML = `
+                <div class="moderation-item__content">
+                    <div>
+                        <strong>${escapeHTML(post.name)}</strong>
+                        <span class="moderation-item__date">· ${getRelativeTime(post.timestamp || post.id)}</span>
+                    </div>
+                    <p>${escapeHTML(post.message)}</p>
+                    <span class="report-reason-badge">Motivo: ${escapeHTML(post.report.reason)}</span>
+                </div>
+                <div class="moderation-item__actions">
+                    <button type="button" class="btn btn-sm btn-outline-secondary discard-report-btn" data-id="${post.id}">Descartar reporte</button>
+                    <button type="button" class="btn btn-sm btn-danger moderation-delete-btn" data-id="${post.id}">Eliminar publicación</button>
+                </div>
+            `;
+            moderationList.appendChild(item);
+        });
+
+        moderationList.querySelectorAll('.discard-report-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = Number(e.currentTarget.dataset.id);
+                const updatedPost = discardPostReport(posts, id);
+                if (!updatedPost) return;
+
+                localStorage.setItem('posts', JSON.stringify(posts));
+                renderModeration();
+                renderPosts();
+            });
+        });
+
+        moderationList.querySelectorAll('.moderation-delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = Number(e.currentTarget.dataset.id);
+                const confirmed = window.confirm('¿Seguro que deseas eliminar esta publicación reportada?');
+                if (!confirmed) return;
+
+                posts = posts.filter(post => post.id !== id);
+                localStorage.setItem('posts', JSON.stringify(posts));
+                renderActivitySummary();
+                renderModeration();
                 renderPosts();
             });
         });

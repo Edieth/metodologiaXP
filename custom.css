@@ -210,6 +210,28 @@ main section {
   border-color: #f59e0b;
 }
 
+.view-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.view-tab {
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 700;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.view-tab:hover,
+.view-tab.active {
+  color: var(--twitter-blue);
+  border-bottom-color: var(--twitter-blue);
+}
+
 .sort-control label,
 .filter-control label {
   color: var(--text-muted);
@@ -483,6 +505,7 @@ main section {
 .post-header {
   display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
   gap: 4px;
 }
 
@@ -514,6 +537,119 @@ main section {
 
 .post-header .edit-btn {
   margin-left: 0;
+}
+
+.report-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 9999px;
+}
+
+.report-btn:hover:not(:disabled) {
+  background-color: rgba(220, 53, 69, 0.1);
+  color: #b02a37;
+}
+
+.report-btn:disabled {
+  color: #b02a37;
+  cursor: default;
+}
+
+.report-status,
+.report-reason-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  background: rgba(220, 53, 69, 0.1);
+  color: #842029;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 5px 9px;
+  margin: 0 0 10px 6px;
+}
+
+.report-form {
+  margin: 10px 0;
+  padding: 12px;
+  border: 1px solid rgba(220, 53, 69, 0.25);
+  border-radius: 10px;
+  background: rgba(220, 53, 69, 0.04);
+}
+
+.report-form .form-label {
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.report-form__controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.report-form__controls select {
+  flex: 1;
+  min-width: 150px;
+}
+
+.moderation-view {
+  min-height: 320px;
+}
+
+.moderation-view__header {
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: 12px;
+}
+
+.moderation-view__header h2 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.moderation-view__header p,
+.moderation-empty span,
+.moderation-item__date {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.moderation-item {
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.moderation-item__content p {
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+
+.moderation-item__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.moderation-empty {
+  text-align: center;
+  padding: 42px 20px;
+}
+
+.moderation-empty p {
+  font-weight: 700;
+  margin-bottom: 4px;
 }
 
 .edit-btn {
