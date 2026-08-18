@@ -123,6 +123,32 @@ main section {
 }
 
 
+.post-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+#discard-draft-btn {
+  border-radius: 9999px !important;
+  border: 1px solid var(--border-light) !important;
+  background-color: transparent !important;
+  color: var(--text-muted) !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  padding: 7px 16px !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#discard-draft-btn:hover {
+  background-color: rgba(244, 33, 46, 0.08) !important;
+  color: #f4212e !important;
+  border-color: rgba(244, 33, 46, 0.3) !important;
+}
+
 #publish-btn,
 .btn-pill {
   border-radius: 9999px !important;
@@ -133,8 +159,6 @@ main section {
   font-weight: 700 !important;
   font-size: 15px !important;
   cursor: pointer;
-  align-self: flex-end;
-  margin-top: 8px;
   transition: background-color 0.2s ease;
 }
 

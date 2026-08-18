@@ -103,8 +103,46 @@ function getSortedPosts(sourcePosts, sortCriterion) {
     return sortedPosts.sort((a, b) => getTimestamp(b) - getTimestamp(a));
 }
 
+const DRAFT_STORAGE_KEY = 'postDraft';
+
+function saveDraftToStorage(storage, draft) {
+    if (draft && (draft.name?.trim() || draft.message?.trim())) {
+        storage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({
+            name: draft.name || '',
+            message: draft.message || ''
+        }));
+    } else {
+        storage.removeItem(DRAFT_STORAGE_KEY);
+    }
+}
+
+function loadDraftFromStorage(storage) {
+    const saved = storage.getItem(DRAFT_STORAGE_KEY);
+    if (!saved) return null;
+    try {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+            return {
+                name: typeof parsed.name === 'string' ? parsed.name : '',
+                message: typeof parsed.message === 'string' ? parsed.message : ''
+            };
+        }
+        return null;
+    } catch (e) {
+        return null;
+    }
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { getFilteredPosts, getSortedPosts, normalizePostReactions, togglePostFavorite };
+    module.exports = {
+        getFilteredPosts,
+        getSortedPosts,
+        normalizePostReactions,
+        togglePostFavorite,
+        saveDraftToStorage,
+        loadDraftFromStorage,
+        DRAFT_STORAGE_KEY
+    };
 }
 
 if (typeof document !== 'undefined') {
@@ -113,6 +151,7 @@ if (typeof document !== 'undefined') {
     const postForm = document.getElementById('post-form');
     const studentNameInput = document.getElementById('student-name');
     const messageTextInput = document.getElementById('message-text');
+    const discardDraftBtn = document.getElementById('discard-draft-btn');
     const feedContainer = document.getElementById('feed-container');
     const charCounter = document.getElementById('char-counter');
     const searchForm = document.getElementById('search-form');
@@ -132,15 +171,53 @@ if (typeof document !== 'undefined') {
     let selectedTag = 'Todas';
     let favoritesOnly = false;
 
-    renderPosts();
-    renderActivitySummary();
-
-    messageTextInput.addEventListener('input', () => {
+    function updateCharCounter() {
+        if (!charCounter || !messageTextInput) return;
         const remaining = MAX_CHARS - messageTextInput.value.length;
         charCounter.textContent = remaining;
         charCounter.classList.toggle('char-counter-warning', remaining <= 20);
+    }
+
+    function handleSaveDraft() {
+        saveDraftToStorage(localStorage, {
+            name: studentNameInput.value,
+            message: messageTextInput.value
+        });
+    }
+
+    function handleLoadDraft() {
+        const draft = loadDraftFromStorage(localStorage);
+        if (draft) {
+            studentNameInput.value = draft.name;
+            messageTextInput.value = draft.message;
+        }
+        updateCharCounter();
+    }
+
+    function handleClearDraft() {
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
+    }
+
+    handleLoadDraft();
+    renderPosts();
+    renderActivitySummary();
+
+    studentNameInput.addEventListener('input', handleSaveDraft);
+
+    messageTextInput.addEventListener('input', () => {
+        updateCharCounter();
+        handleSaveDraft();
     });
 
+    if (discardDraftBtn) {
+        discardDraftBtn.addEventListener('click', () => {
+            studentNameInput.value = '';
+            messageTextInput.value = '';
+            handleClearDraft();
+            updateCharCounter();
+            studentNameInput.focus();
+        });
+    }
 
     searchInput.addEventListener('input', () => {
         searchQuery = searchInput.value;
@@ -199,13 +276,14 @@ if (typeof document !== 'undefined') {
 
         localStorage.setItem('posts', JSON.stringify(posts));
 
+        handleClearDraft();
+
         renderActivitySummary();
         renderPosts(newPost.id);
 
         postForm.reset();
         postTagSelect.value = 'General';
-        charCounter.textContent = MAX_CHARS;
-        charCounter.classList.remove('char-counter-warning');
+        updateCharCounter();
         studentNameInput.focus();
     });
 
